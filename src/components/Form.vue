@@ -582,7 +582,7 @@ type SupportField = ITextField | IDateTimeField | INumberField;
 }
 .el-tag__content .info {
   color: #73767a;
-  font-size: x-small;
+  font-size: small;
 }
 
 .el-select-dropdown.is-multiple .el-select-dropdown__item.selected {
