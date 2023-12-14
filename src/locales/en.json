@@ -1,0 +1,150 @@
+{
+  "form": {
+    "currentTable": "Current Table",
+    "chooseSelectMode": "Choose Conversion Mode",
+    "chooseOriginField": "Choose Source Field",
+    "chooseTargetField": "Choose Target Field",
+    "inputRegexText": "Enter Regex Expression",
+    "associateTableField": "关联字段",
+    "inputReplaceText": "Enter the replacement text",
+    "associateTable": "关联数据表",
+    "content": "录入内容",
+    "input": "请输入"
+  },
+  "mode": {
+    "test": "Match",
+    "match": "Extract",
+    "replace": "Replace",
+    "split": "Split",
+    "testDesc": "Check if the string matches the regular expression",
+    "matchDesc": "Extract substrings that match the regular expression",
+    "replaceDesc": "Replace matching substrings with the specified string",
+    "splitDesc": "Split into substrings based on the regular expression"
+
+  },
+  "info": {
+    "originField": "The source field should be of numeric or text types",
+    "targetField": "The target field should be of text type",
+    "guideDesc": "Utilize regular expressions to match and manipulate text, ",
+    "guide": "plugin guide",
+    "url": "https://uestc.feishu.cn/docx/Ue4odm0Ftowfp3xg6macNOczn5E"
+  },
+  "message": {
+    "emptyField": "Please select a field",
+    "emptyMode": "Please select a conversion mode",
+    "emptyRegex": "Please enter a regular expression",
+    "wrongRegex": "Please enter a valid regular expression"
+  },
+  "res" : {
+    "true": "true",
+    "false": "false"
+  },
+  "modifier": {
+    "global": "Global search -g",
+    "ignoreCase": "Case-insensitive -i",
+    "multiLine": "Multiline mode -m",
+    "newline": "Include newline characters -s"
+  },
+  "sample": {
+    "number": "Match numbers",
+    "aplpha": "Match letters",
+    "chinese": "Match Chinese characters",
+    "phoneNumber": "Match phone number",
+    "extractPhoneNumber": "extract phone number",
+    "IdCard": "Match ID card(CHN 18 digits)",
+    "PostalCode": "Postal Code (CHN 6 digits)",
+    "IPAddress": "IP Address"
+  },
+  "status": {
+    "more": "more",
+    "transforming": "Transforming",
+    "confirm": "Start Transformation",
+    "stop": "Stop",
+    "succeeded": "Transformation Succeeded: ",
+    "failed": "Transformation Failed: ",
+    "stopTag": "Transformation Stopped",
+    "failTag": "Transformation Failed",
+    "completeTag": "Transformation Complete",
+    "checkOriginField": "Please check the source field data"
+  },
+  "grammarRef": "Grammar Reference",
+  "moreRef": "For more detailed guides, refer to, ",
+  "syntaxReferenceList": [
+    {
+      "syntax": ".",
+      "desc": "Any character except newline."
+    },
+    {
+      "syntax": "^",
+      "desc": "Start of string."
+    },
+    {
+      "syntax": "$",
+      "desc": "End of string."
+    },
+    {
+      "syntax": "\\d, \\w, \\s",
+      "desc": "Match a digit, word character, or whitespace."
+    },
+    {
+      "syntax": "\\D, \\W, \\S",
+      "desc": "Match a non-digit, non-word character, or non-whitespace."
+    },
+    {
+      "syntax": "[abc]",
+      "desc": "Match any one letter from a, b, or c."
+    },
+    {
+      "syntax": "[az]",
+      "desc": "Match any one letter from a to z."
+    },
+    {
+      "syntax": "[^abc]",
+      "desc": "Match any letter except a, b, or c."
+    },
+    {
+      "syntax": "aa|bb",
+      "desc": "Match either aa or bb."
+    },
+    {
+      "syntax": "?",
+      "desc": "Match 0 or 1 times."
+    },
+    {
+      "syntax": "*",
+      "desc": "Match 0 or more times."
+    },
+    {
+      "syntax": "+",
+      "desc": "Match 1 or more times."
+    },
+    {
+      "syntax": "{n}",
+      "desc": "Match exactly n times."
+    },
+    {
+      "syntax": "{n,}",
+      "desc": "Match n or more times."
+    },
+    {
+      "syntax": "{m,n}",
+      "desc": "Match at least m and at most n times."
+    },
+    {
+      "syntax": "(expr)",
+      "desc": "Capture expr as a subpattern and use it with \\1."
+    },
+    {
+      "syntax": "(?:expr)",
+      "desc": "Non-capturing subpattern."
+    },
+    {
+      "syntax": "(?=expr)",
+      "desc": "Positive lookahead pattern expr."
+    },
+    {
+      "syntax": "(?!expr)",
+      "desc": "Negative lookahead pattern expr."
+    }
+  ]
+}

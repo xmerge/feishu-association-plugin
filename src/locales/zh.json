@@ -1,0 +1,150 @@
+{
+  "form": {
+    "currentTable": "当前数据表",
+    "chooseSelectMode": "选择转换模式",
+    "chooseOriginField": "选择源字段",
+    "chooseTargetField": "选择目标字段",
+    "inputRegexText": "输入正则表达式",
+    "associateTableField": "关联字段",
+    "inputReplaceText": "输入替换目标文本",
+
+    "associateTable": "关联数据表",
+    "content": "填入内容",
+    "input": "请输入"
+  },
+  "mode": {
+    "test": "匹配",
+    "match": "提取",
+    "replace": "替换",
+    "split": "分割",
+    "testDesc": "检测字符串与正则表达式是否匹配",
+    "matchDesc": "提取与正则表达式匹配的子串",
+    "replaceDesc": "将匹配子串替换为指定字符串",
+    "splitDesc": "按正则表达式分割为子串"
+  },
+  "info": {
+    "originField": "源字段应为数字或文本类型",
+    "targetField": "目标字段应为文本类型",
+    "guideDesc": "利用正则表达式匹配和操作文本，",
+    "guide": "插件指南",
+    "url": "https://uestc.feishu.cn/docx/Ue4odm0Ftowfp3xg6macNOczn5E"
+  },
+  "message": {
+    "emptyField": "请选择字段",
+    "emptyMode": "请选择转换模式",
+    "emptyRegex": "请输入正则表达式",
+    "wrongRegex": "请输入正确的正则表达式"
+  },
+  "res" : {
+    "true": "匹配",
+    "false": "不匹配"
+  },
+  "modifier": {
+    "global": "全局搜索 -g",
+    "ignoreCase": "忽略大小写 -i",
+    "multiLine": "多行模式 -m",
+    "newline": "包含换行符 -s"
+  },
+  "sample": {
+    "number": "数字",
+    "aplpha": "字母",
+    "chinese": "中文",
+    "phoneNumber": "电话号码（严格匹配）",
+    "extractPhoneNumber": "提取电话号码",
+    "IdCard": "身份证(18位)",
+    "PostalCode": "邮政编码(6位)",
+    "IPAddress": "IP地址"
+  },
+  "status": {
+    "more": "更多",
+    "transforming": "转换中",
+    "confirm": "填入",
+    "stop": "停止",
+    "succeeded": "转换成功：",
+    "failed": "转换失败：",
+    "stopTag": "转换停止",
+    "failTag": "转换失败",
+    "completeTag": "转换完成",
+    "checkOriginField": "请检查源字段数据"
+  },
+  "grammarRef": "语法参考",
+  "moreRef": "更多指南详见",
+  "syntaxReferenceList": [
+    {
+      "syntax": ".",
+      "desc": "除换行符以外的所有字符。"
+    },
+    {
+      "syntax": "^",
+      "desc": "字符串开头。"
+    },
+    {
+      "syntax": "$",
+      "desc": "字符串结尾。"
+    },
+    {
+      "syntax": "\\d, \\w, \\s",
+      "desc": "匹配数字、字符、空格。"
+    },
+    {
+      "syntax": "\\D, \\W, \\S",
+      "desc": "匹配非数字、非字符、非空格。"
+    },
+    {
+      "syntax": "[abc]",
+      "desc": "匹配 a、b 或 c 中的一个字母。"
+    },
+    {
+      "syntax": "[az]",
+      "desc": "匹配 a 到 z 中的一个字母。"
+    },
+    {
+      "syntax": "[^abc]",
+      "desc": "匹配除了 a、b 或 c 中的其他字母。"
+    },
+    {
+      "syntax": "aa|bb",
+      "desc": "匹配 aa 或 bb。"
+    },
+    {
+      "syntax": "?",
+      "desc": "0 次或 1 次匹配。"
+    },
+    {
+      "syntax": "*",
+      "desc": "匹配 0 次或多次。"
+    },
+    {
+      "syntax": "+",
+      "desc": "匹配 1 次或多次。"
+    },
+    {
+      "syntax": "{n}",
+      "desc": "匹配 n 次。"
+    },
+    {
+      "syntax": "{n,}",
+      "desc": "匹配 n 次以上。"
+    },
+    {
+      "syntax": "{m,n}",
+      "desc": "最少 m 次，最多 n 次匹配。"
+    },
+    {
+      "syntax": "(expr)",
+      "desc": "捕获 expr 子模式，以 \\1 使用它。"
+    },
+    {
+      "syntax": "(?:expr)",
+      "desc": "忽略捕获的子模式。"
+    },
+    {
+      "syntax": "(?=expr)",
+      "desc": "正向预查模式 expr。"
+    },
+    {
+      "syntax": "(?!expr)",
+      "desc": "负向预查模式 expr。"
+    }
+  ]
+}
