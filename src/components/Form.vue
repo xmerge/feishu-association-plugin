@@ -17,7 +17,7 @@ import { bitable } from "@lark-base-open/js-sdk";
 import { pinyin } from "pinyin-pro";
 import { ref, onMounted, shallowRef, computed, reactive } from "vue";
 import { i18n } from "../locales/i18n";
-import { WarningFilled, CaretBottom } from "@element-plus/icons-vue";
+import { WarningFilled, CaretBottom, Select } from "@element-plus/icons-vue";
 // import { syntaxReferenceList } from "./Form";
 const { t } = i18n.global;
 
@@ -30,7 +30,7 @@ const finishFlag = ref(false);
 const recordCount = ref(0);
 const isLoading = ref(false);
 const inputRef = shallowRef();
-const resetTextValue = ref(true);
+const my_resetTextValue = shallowRef(true);
 
 /** 页面数据 */
 const value = ref();
@@ -197,7 +197,7 @@ const handleConfirm = async () => {
         [curretnSelection.value.fieldId]: textValue.value,
       },
     });
-    if (res && resetTextValue.value) {
+    if (res && my_resetTextValue.value === true) {
       textValue.value = "";
     }
   } else {
@@ -271,7 +271,8 @@ const getSelectedFieldRecords = async () => {
     for (const recordId of recordIdList) {
       const val = await field?.getValue(recordId);
       const fieldName = await field?.getName();
-      const res = val != null ? val[0].text : null;
+      // const res = val != null ? val[0].text : null;
+      const res = val != null ? val.map((item) => item.text).join("") : null;
       if (res) {
         optionSet.value.add({
           option: res,
@@ -489,20 +490,18 @@ type SupportField = ITextField | IDateTimeField | INumberField;
                   @click="handleOptionClick(item.option || ``)"
                   style="margin-bottom: 4px; border-radius: 6px"
                 >
-                <el-row style="display: flex; justify-content: space-between;">
-                  <span>
-                    {{ item.option }}
-                  </span>
-                  <span>
-                    <el-tag type="info">
-                      <span class="info">
-                        {{ item.field }}
-                      </span>
+                  <el-row style="display: flex; justify-content: space-between">
+                    <span>
+                      {{ item.option }}
+                    </span>
+                    <span>
+                      <el-tag type="info">
+                        <span class="info">
+                          {{ item.field }}
+                        </span>
                       </el-tag>
-                   
-                  </span>
-                </el-row>
-                  
+                    </span>
+                  </el-row>
                 </el-card>
               </div>
             </el-scrollbar>
@@ -519,11 +518,12 @@ type SupportField = ITextField | IDateTimeField | INumberField;
       >
         {{ isLoading ? t("status.transforming") : t("status.confirm") }}
       </el-button>
-      <el-switch
-        v-model="resetTextValue"
-        active-text="填入后清空输入框"
-        style="margin-left: 10px"
-      />
+      <el-tag @click="my_resetTextValue = !my_resetTextValue" class="ml-2 clickable" type="info" style="margin-left: 10px">
+        <span class="info" style="display: flex; align-items: center; justify-content: center;"> 
+          <el-icon v-if="my_resetTextValue" style="color: rgb(20, 86, 240); font-size: x-large; margin-right: 4px;"><Select /></el-icon>
+          填入后清空输入框
+         </span>
+         </el-tag>
     </div>
   </div>
 </template>
@@ -582,8 +582,7 @@ type SupportField = ITextField | IDateTimeField | INumberField;
 }
 .el-tag__content .info {
   color: #73767a;
-  font-size: xx-small;
-
+  font-size: x-small;
 }
 
 .el-select-dropdown.is-multiple .el-select-dropdown__item.selected {
