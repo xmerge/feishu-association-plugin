@@ -14,6 +14,7 @@ import {
   IFilterAll,
 } from "@lark-base-open/js-sdk";
 import { bitable } from "@lark-base-open/js-sdk";
+import { pinyin } from "pinyin-pro";
 import { ref, onMounted, shallowRef, computed, reactive } from "vue";
 import { i18n } from "../locales/i18n";
 import { WarningFilled, CaretBottom } from "@element-plus/icons-vue";
@@ -42,17 +43,54 @@ const tableList = shallowRef<ITable[]>();
 const tableNameList = ref<string[]>([]);
 const selectedTableFieldList = shallowRef<IFieldMeta[]>([]);
 const textValue = ref("");
-const optionSet = ref<Set<string>>(new Set());
-const optionArray = ref<string[]>([]);
+const optionSet = ref<
+  Set<{
+    option: string;
+    field: string;
+  }>
+>(new Set());
+const optionArray = ref<
+  {
+    option: string;
+    field: string;
+  }[]
+>([]);
 const currentWord = ref("");
 const ignoredText = ref("");
 const curretnSelection = shallowRef<Selection>();
+
 const usableOptionArray = computed(() => {
-  return optionArray.value.filter((item) => item.includes(currentWord.value));
+  const hardMatchArray = optionArray.value.filter((item) =>
+    item.option.includes(currentWord.value)
+  );
+  const lowerCaseMatchArray = optionArray.value.filter((item) =>
+    pinyin(item.option, { toneType: "none" })
+      .replace(/\s/g, "")
+      .startsWith(currentWord.value)
+  );
+  const initialMatchArray = optionArray.value.filter((item) => {
+    let initial = "";
+    pinyin(item.option, { toneType: "none" })
+      .split(" ")
+      .forEach((item) => {
+        initial += item[0];
+      });
+    return initial.startsWith(currentWord.value);
+  });
+  const mergedArray = [
+    ...new Set([
+      ...hardMatchArray,
+      ...initialMatchArray,
+      ...lowerCaseMatchArray,
+    ]),
+  ];
+  const res = mergedArray.filter((item) => item != undefined && item != null);
+  // console.log("mergedArray", res);
+  return res;
 });
 const currentFirstOption = computed(() => {
   if (currentWord.value != "") {
-    return usableOptionArray.value[0];
+    return usableOptionArray.value[0].option || "";
   }
   return "";
 });
@@ -143,111 +181,6 @@ const syntaxReferenceList = computed(() => {
 });
 
 /**
- * 处理单位变化的函数
- */
-const handleUnitChange = (): void => {
-  // originField.value = undefined; // 重置原字段的值为undefined
-  // targetField.value = undefined; // 重置目标字段的值为undefined
-};
-
-/**
- * 重置页面信息
- */
-const handleReset = (): void => {
-  errorMsg.value = "";
-  isTransformed.value = true;
-  isLoading.value = true;
-  stopFlag.value = false;
-  finishFlag.value = false;
-  sucessCounter.value = 0;
-  recordCount.value = 0;
-  failureCounter.value = 0;
-};
-
-/**
- * 提取字段值
- * @param selectedField 源字段
- * @param recordId 记录Id
- */
-const extractValueByRecordId = async (
-  selectedField: SupportField,
-  recordId: string
-): Promise<string | null> => {
-  const originFieldVar = await selectedField.getValue(recordId);
-  if (originFieldVar === null) {
-    return null;
-  }
-  let res: string | null = null;
-  // 本身是 IDateTimeField || INumberField 类型
-  if (originField.value?.type === FieldType.Number) {
-    res = originFieldVar.toString();
-  } else if (originField.value?.type === FieldType.Text) {
-    // 本身是 ITextField 类型
-    if (Array.isArray(originFieldVar) && originFieldVar[0].type == "text") {
-      if (modifierText.value.includes("m")) {
-        res = originFieldVar.map((object) => object.text).join("");
-      } else {
-        res = originFieldVar[0].text;
-      }
-      console.log("res ", res);
-    }
-  }
-  return res;
-};
-
-/**
- * 设置字段值
- * @param targetSelectField 目标字段
- * @param recordId 记录Id
- * @param targetVal 目标值
- */
-const setValueByRecordId = async (
-  targetSelectField: ITextField,
-  recordId: string,
-  targetVal: string
-): Promise<void> => {
-  let res: Promise<void>;
-  if (targetField.value?.type === FieldType.Text) {
-    res = (targetSelectField as ITextField)
-      .setValue(recordId, targetVal.toString())
-      .then(() => {
-        sucessCounter.value++;
-      })
-      .catch(() => {
-        failureCounter.value++;
-      });
-  } else {
-    return;
-  }
-
-  return res;
-};
-
-// /**
-//  * 验证表单
-//  */
-// const fomrValidate = () => {
-//   // 源字段和目标字段都为空
-//   if (!(originField.value && targetField.value)) {
-//     return t("message.emptyField");
-//   }
-//   // 转换模式为空
-//   if (!selectedTable.value.value.length) {
-//     return t("message.emptyMode");
-//   }
-//   // 正则表达式文本为空
-//   if (!regexText.value.length) {
-//     return t("message.emptyRegex");
-//   }
-//   // 正则表达式无效
-//   if (!isRegexValid(regexText.value)) {
-//     return t("message.wrongRegex");
-//   }
-//   // 验证通过
-//   return null;
-// };
-
-/**
  * 提交转换
  */
 const handleConfirm = async () => {
@@ -276,81 +209,6 @@ const handleConfirm = async () => {
 };
 
 /**
- * 转换模版
- * @param mode 模式
- */
-const handleClickSample = (mode: string) => {
-  const regexes = {
-    number: "[0-9]+",
-    alpha: "[a-z]+",
-    phoneNumber: "^1[0-9]{10}$",
-    chinese: `[\\u4e00-\\u9fff]+`,
-    extractPhoneNumber: "1[0-9]{10}",
-    IdCard: `^[1-9]\\d{5}(18|19|20)\\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]$`,
-    PostalCode: `^[1-9]\\d{5}$`,
-    IPAddress: `^((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)$`,
-  };
-  regexText.value = regexes[mode];
-};
-
-/**
- *
- * @param originFieldText 源字段文本
- * @param regexExpression 正则表达式
- */
-// const regexTranform = (
-//   originFieldText: string,
-//   regexExpression: string,
-//   replaceText: string
-// ) => {
-//   let regex: RegExp;
-//   if (modifierText.value.length) {
-//     regex = new RegExp(regexExpression, modifierText.value);
-//   } else {
-//     regex = new RegExp(regexExpression);
-//   }
-//   if (selectedTable.value.value == "test") {
-//     console.log(regex);
-//     return regex.test(originFieldText) ? t("res.true") : t("res.false");
-//   }
-//   if (selectedTable.value.value == "match") {
-//     const matches = originFieldText.match(regex);
-//     console.log(matches);
-//     return matches ? matches.join(" ") : "";
-//   }
-//   if (selectedTable.value.value == "replace") {
-//     return originFieldText.replace(regex, replaceText);
-//   }
-//   if (selectedTable.value.value == "split") {
-//     return originFieldText.split(regex).join(" ");
-//   }
-// };
-
-/**
- * 停止转换
- */
-const handleStop = () => {
-  if (finishFlag.value) {
-    return;
-  }
-  isLoading.value = false;
-  stopFlag.value = true;
-};
-
-/**
- * 验证用户输入的字符串是否是合法的正则表达式
- * @param pattern 用户输入的字符串
- */
-const isRegexValid = (pattern: string) => {
-  try {
-    new RegExp(pattern);
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
-
-/**
  * 获取当前选中的表信息
  */
 const getCurrentSelection = async () => {
@@ -368,7 +226,7 @@ const getCurrentSelection = async () => {
  * 字段变化时触发
  */
 const handleFieldChange = () => {
-  console.log("handleFieldChange");
+  // console.log("handleFieldChange");
   getCurrentSelection();
   originField.value = undefined;
   targetField.value = undefined;
@@ -412,9 +270,13 @@ const getSelectedFieldRecords = async () => {
     const field = await selectedTable.value?.getFieldById(fieldMetaInfo.id);
     for (const recordId of recordIdList) {
       const val = await field?.getValue(recordId);
+      const fieldName = await field?.getName();
       const res = val != null ? val[0].text : null;
       if (res) {
-        optionSet.value.add(res);
+        optionSet.value.add({
+          option: res,
+          field: fieldName || "",
+        });
       }
     }
   }
@@ -422,10 +284,15 @@ const getSelectedFieldRecords = async () => {
 };
 
 const onInputChange = () => {
-  console.log("输入改变");
+  // console.log("输入改变");
   currentWord.value = removePrefix(textValue.value, ignoredText.value);
-  console.log(currentWord.value);
-  if (findElementWithSubstring(optionSet.value, currentWord.value)) {
+  // console.log("currentWord: ", currentWord.value);
+  if (
+    findElementWithSubstring(
+      new Set(Array.from(optionSet.value.values()).map((item) => item.option)),
+      currentWord.value
+    )
+  ) {
     if (currentWord.value != "") {
       // inputRef.value.blur();
     }
@@ -438,9 +305,9 @@ const onInputChange = () => {
 const handleEnterKey = async (event) => {
   if (event.key === "Enter") {
     if (currentWord.value != "") {
-      console.log("currentWord.value", currentWord.value);
-      handleOptionClick(currentFirstOption.value.toString());
-      console.log("textValue", textValue.value);
+      // console.log("currentWord.value", currentWord.value);
+      handleOptionClick(currentFirstOption.value);
+      // console.log("textValue", textValue.value);
       setTimeout(() => {
         textValue.value = textValue.value.replace(/\n+$/, "");
       }, 10);
@@ -449,14 +316,22 @@ const handleEnterKey = async (event) => {
 };
 
 const handleOptionClick = (item: string) => {
-  textValue.value += removePrefix(item, currentWord.value);
+  textValue.value = removeSuffix(textValue.value, currentWord.value);
+  textValue.value += item;
   ignoredText.value = textValue.value;
   currentWord.value = "";
   inputRef.value.focus();
 };
 
 function removePrefix(A: string, B: string) {
-  const regex = new RegExp(`^${B}`);
+  const escapedB = B.replace(/\\/g, "\\\\");
+  const regex = new RegExp(`^${escapedB}`);
+  return A.replace(regex, "");
+}
+
+function removeSuffix(A: string, B: string) {
+  const escapedB = B.replace(/\\/g, "\\\\");
+  const regex = new RegExp(`${escapedB}$`);
   return A.replace(regex, "");
 }
 
@@ -466,8 +341,10 @@ function findElementWithSubstring(set: Set<string>, substring: string) {
     if (excludeArray.includes(substring)) {
       return;
     }
-    if (element.includes(substring)) {
-      return element;
+    if (usableOptionArray.value.length != 0) {
+      // console.log(usableOptionArray.value);
+      // console.log("element", element);
+      return true;
     }
   }
   return null; // 或者返回其他指定的值，表示未找到
@@ -602,21 +479,30 @@ type SupportField = ITextField | IDateTimeField | INumberField;
             "
           >
             <el-scrollbar max-height="200px">
-              <div
-                v-for="(item, _) in optionArray.filter((item) =>
-                  item.includes(currentWord)
-                )"
-              >
+              <div v-for="(item, _) in usableOptionArray">
                 <el-card
                   class="option-card"
                   :ref="currentWord && _ == 0 ? `selectableCardRef` : ''"
                   @keydown.enter="handleEnterKey"
                   :class="currentWord && _ == 0 ? 'first' : ''"
                   shadow="hover"
-                  @click="handleOptionClick(item)"
+                  @click="handleOptionClick(item.option || ``)"
                   style="margin-bottom: 4px; border-radius: 6px"
                 >
-                  {{ item }}
+                <el-row style="display: flex; justify-content: space-between;">
+                  <span>
+                    {{ item.option }}
+                  </span>
+                  <span>
+                    <el-tag type="info">
+                      <span class="info">
+                        {{ item.field }}
+                      </span>
+                      </el-tag>
+                   
+                  </span>
+                </el-row>
+                  
                 </el-card>
               </div>
             </el-scrollbar>
@@ -625,7 +511,7 @@ type SupportField = ITextField | IDateTimeField | INumberField;
       </div>
     </el-form>
     <el-col :span="24"> </el-col>
-    <div style="color: rgb(20, 86, 240);">
+    <div style="color: rgb(20, 86, 240)">
       <el-button
         :disabled="isLoading"
         @click="handleConfirm"
@@ -693,6 +579,11 @@ type SupportField = ITextField | IDateTimeField | INumberField;
 
 :deep(.el-tag__content) {
   color: rgb(20, 86, 240);
+}
+.el-tag__content .info {
+  color: #73767a;
+  font-size: xx-small;
+
 }
 
 .el-select-dropdown.is-multiple .el-select-dropdown__item.selected {
