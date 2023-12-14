@@ -521,7 +521,7 @@ type SupportField = ITextField | IDateTimeField | INumberField;
       <el-tag @click="my_resetTextValue = !my_resetTextValue" class="ml-2 clickable" type="info" style="margin-left: 10px">
         <span class="info" style="display: flex; align-items: center; justify-content: center;"> 
           <el-icon v-if="my_resetTextValue" style="color: rgb(20, 86, 240); font-size: x-large; margin-right: 4px;"><Select /></el-icon>
-          填入后清空输入框
+          {{ my_resetTextValue ? `填入后清空输入框` : `不清空输入框` }}
          </span>
          </el-tag>
     </div>
