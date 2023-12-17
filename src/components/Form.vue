@@ -15,30 +15,22 @@ import {
 } from "@lark-base-open/js-sdk";
 import { bitable } from "@lark-base-open/js-sdk";
 import { pinyin } from "pinyin-pro";
-import { ref, onMounted, shallowRef, computed, reactive } from "vue";
+import { ref, onMounted, shallowRef, computed } from "vue";
 import { i18n } from "../locales/i18n";
 import { WarningFilled, CaretBottom, Select } from "@element-plus/icons-vue";
 // import { syntaxReferenceList } from "./Form";
 const { t } = i18n.global;
 
 /** 页面加载数据 */
-const isTransformed = ref(false);
-const sucessCounter = ref(0);
-const failureCounter = ref(0);
-const stopFlag = ref(false);
-const finishFlag = ref(false);
-const recordCount = ref(0);
 const isLoading = ref(false);
 const inputRef = shallowRef();
-const my_resetTextValue = shallowRef(true);
+const my_resetTextValue = ref(false);
+const cacheFlag = ref(false);
+const lastTextValue = ref("");
+const currentRecommandNum = ref(0);
 
 /** 页面数据 */
-const value = ref();
-
-const regexText = ref("");
-const modifierText = ref("");
 const activeTable = shallowRef<ITable>();
-
 const tableList = shallowRef<ITable[]>();
 const tableNameList = ref<string[]>([]);
 const selectedTableFieldList = shallowRef<IFieldMeta[]>([]);
@@ -55,6 +47,7 @@ const optionArray = ref<
     field: string;
   }[]
 >([]);
+
 const currentWord = ref("");
 const ignoredText = ref("");
 const curretnSelection = shallowRef<Selection>();
@@ -90,7 +83,7 @@ const usableOptionArray = computed(() => {
 });
 const currentFirstOption = computed(() => {
   if (currentWord.value != "") {
-    return usableOptionArray.value[0].option || "";
+    return usableOptionArray.value[currentRecommandNum.value].option || "";
   }
   return "";
 });
@@ -98,87 +91,16 @@ const currentFirstOption = computed(() => {
 const fieldList = shallowRef<IFieldMeta[]>([]);
 const activeTableName = ref("");
 const activeTableId = ref("");
-const errorMsg = ref("");
-const replaceText = ref("");
 const originField = shallowRef<IFieldMeta>();
 const targetField = shallowRef<IFieldMeta>();
 
 const selectedTableName = ref("");
 const selectedTable = shallowRef<ITable>();
 const selectedFieldList = shallowRef<IFieldMeta[]>([]);
-const option = ref("");
-const transformPatternList = computed(() => {
-  return [
-    {
-      label: t("mode.test"),
-      value: "test",
-      desc: t("mode.testDesc"),
-    },
-    {
-      label: t("mode.match"),
-      value: "match",
-      desc: t("mode.matchDesc"),
-    },
-    {
-      label: t("mode.replace"),
-      value: "replace",
-      desc: t("mode.replaceDesc"),
-    },
-    {
-      label: t("mode.split"),
-      value: "split",
-      desc: t("mode.splitDesc"),
-    },
-  ];
-});
-const modifierList = computed(() => {
-  return [
-    {
-      label: t("modifier.global"),
-      value: "g",
-    },
-    {
-      label: t("modifier.ignoreCase"),
-      value: "i",
-    },
-    {
-      label: t("modifier.multiLine"),
-      value: "m",
-    },
-    {
-      label: t("modifier.newline"),
-      value: "s",
-    },
-  ];
-});
 
-const sampleList = computed(() => {
-  return [
-    {
-      label: t("sample.extractPhoneNumber"),
-      value: "extractPhoneNumber",
-      regex: "",
-    },
-    {
-      label: t("sample.IdCard"),
-      value: "IdCard",
-      regex: "",
-    },
-    {
-      label: t("sample.PostalCode"),
-      value: "PostalCode",
-      regex: "",
-    },
-    // {
-    //   label: t("sample.IPAddress"),
-    //   value: "IPAddress",
-    //   regex: ""
-    // },
-  ];
-});
-const syntaxReferenceList = computed(() => {
-  return i18n.global.tm("syntaxReferenceList");
-});
+const handleSetLastText = () => {
+  textValue.value = lastTextValue.value;
+};
 
 /**
  * 提交转换
@@ -189,6 +111,14 @@ const handleConfirm = async () => {
     curretnSelection.value.fieldId &&
     curretnSelection.value?.recordId
   ) {
+    localStorage.setItem(
+      "selectedTableName",
+      JSON.stringify(selectedTableName.value)
+    );
+    localStorage.setItem(
+      "selectedFieldList",
+      JSON.stringify(selectedFieldList.value)
+    );
     const table = await bitable.base.getTableById(
       curretnSelection.value.tableId
     );
@@ -198,6 +128,8 @@ const handleConfirm = async () => {
       },
     });
     if (res && my_resetTextValue.value === true) {
+      console.log("res ", res);
+      lastTextValue.value = textValue.value;
       textValue.value = "";
     }
   } else {
@@ -254,13 +186,15 @@ const getTableList = async (): Promise<ITable[]> => {
  * 获取选中table的字段列表
  */
 const getSelectedTableFieldList = async (): Promise<void> => {
+  if (cacheFlag.value) {
+    console.log("读取缓存");
+    cacheFlag.value = false;
+    return;
+  }
+  console.log("选择table变化");
   selectedFieldList.value = []; // 重置
   selectedTable.value = await bitable.base.getTable(selectedTableName.value);
-  // selectedTable.value = await bitable.base.getTable(
-  //   selectedTableName.value
-  // );
   selectedTableFieldList.value = await selectedTable.value.getFieldMetaList();
-  // console.log("selectedTableFieldList", selectedTableFieldList.value);
 };
 
 const getSelectedFieldRecords = async () => {
@@ -304,14 +238,26 @@ const onInputChange = () => {
 };
 
 const handleEnterKey = async (event) => {
-  if (event.key === "Enter") {
+  if (event.shiftKey && event.key === "Enter") {
+    setTimeout(() => {
+        textValue.value = textValue.value.replace(/\n+$/, "");
+      }, 10);
+    handleConfirm();
+  } else if (event.key === "Enter") {
     if (currentWord.value != "") {
-      // console.log("currentWord.value", currentWord.value);
       handleOptionClick(currentFirstOption.value);
-      // console.log("textValue", textValue.value);
       setTimeout(() => {
         textValue.value = textValue.value.replace(/\n+$/, "");
       }, 10);
+      currentRecommandNum.value = 0;
+    }
+  } else if (event.key === "ArrowDown") {
+    if (currentRecommandNum.value < usableOptionArray.value.length - 1) {
+      currentRecommandNum.value += 1;
+    }
+  } else if (event.key === "ArrowUp") {
+    if (currentRecommandNum.value > 0) {
+      currentRecommandNum.value -= 1;
     }
   }
 };
@@ -351,6 +297,16 @@ function findElementWithSubstring(set: Set<string>, substring: string) {
   return null; // 或者返回其他指定的值，表示未找到
 }
 
+const selectedTableNameCache = localStorage.getItem("selectedTableName");
+const selectedFieldListCache = localStorage.getItem("selectedFieldList");
+if (selectedTableNameCache != null) {
+  cacheFlag.value = true;
+}
+selectedTableName.value = selectedTableNameCache
+  ? JSON.parse(selectedTableNameCache)
+  : "";
+console.log("cache-selectedFieldList", selectedFieldList.value);
+
 /**
  * 组件挂载时触发
  */
@@ -371,22 +327,31 @@ onMounted(async () => {
     const name = await table.getName();
     tableNameList.value.push(name);
   }
+  selectedFieldList.value = selectedFieldListCache
+    ? JSON.parse(selectedFieldListCache)
+    : [];
+  console.log("cache-selectedFieldList2 ", selectedFieldList.value);
 });
 
 type SupportField = ITextField | IDateTimeField | INumberField;
 </script>
 
 <template>
-  <!-- <div style="margin-bottom: 15px">
+  <div style="margin-bottom: 15px">
     <div>
       <el-alert show-icon type="info" style="border-radius: 6px">
-        <template #title>
+        <!-- <template #title>
           {{ t("info.guideDesc") }}
           <a :href="t(`info.url`)" target="_blank">{{ t(`info.guide`) }}</a>
+        </template> -->
+        <template #title>
+          <span style="display: flex; justify-content: center; align-items: center;">
+            <span style="margin-right: 4px;">填入按钮快捷键</span> <el-tag type="">Shift</el-tag> + <el-tag>Enter</el-tag>
+          </span>
         </template>
       </el-alert>
     </div>
-  </div> -->
+  </div>
   <div style="padding-bottom: 10px">
     <el-form label-position="top">
       <!-- 当前数据表 {{ 数据表名称 }} -->
@@ -400,8 +365,8 @@ type SupportField = ITextField | IDateTimeField | INumberField;
       >
         {{ t("form.currentTable") }}
         <el-tag
-          type="primary"
-          size="medium"
+          type=""
+          size="default"
           style="margin-left: 10px; border-radius: 10px"
         >
           {{ activeTableName }}
@@ -436,8 +401,8 @@ type SupportField = ITextField | IDateTimeField | INumberField;
             v-model="selectedFieldList"
             multiple
             collapse-tags
-            max-collapse-tags="3"
-            collapse-tags-tooltip="true"
+            :max-collapse-tags="3"
+            :collapse-tags-tooltip="true"
             value-key="id"
             class="m-2"
             :placeholder="t(`form.associateTableField`)"
@@ -468,6 +433,52 @@ type SupportField = ITextField | IDateTimeField | INumberField;
             :change="onInputChange()"
           />
         </el-form-item>
+        <el-form-item>
+          <div style="color: rgb(20, 86, 240)">
+            <el-button
+              :disabled="isLoading"
+              @click="handleConfirm"
+              color="rgb(20, 86, 240)"
+            >
+              {{ isLoading ? t("status.transforming") : t("status.confirm") }}
+            </el-button>
+            <el-button
+              v-if="lastTextValue.length != 0 && my_resetTextValue"
+              :disabled="isLoading"
+              @click="handleSetLastText"
+              color="rgb(244, 244, 245)"
+            >
+              {{ `上次内容` }}
+            </el-button>
+            <el-tag
+              @click="my_resetTextValue = !my_resetTextValue"
+              class="ml-2 clickable"
+              type="info"
+              style="margin-left: 10px"
+            >
+              <span
+                class="info"
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <el-icon
+                  v-if="my_resetTextValue"
+                  style="
+                    color: rgb(20, 86, 240);
+                    font-size: x-large;
+                    margin-right: 4px;
+                  "
+                  ><Select
+                /></el-icon>
+                {{ my_resetTextValue ? `填入后清空输入框` : `不清空输入框` }}
+              </span>
+            </el-tag>
+          </div>
+          
+        </el-form-item>
         <el-form-item label="联想内容" v-if="optionArray.length != 0">
           <div
             v-if="optionArray.length != 0"
@@ -479,27 +490,33 @@ type SupportField = ITextField | IDateTimeField | INumberField;
               width: 100%;
             "
           >
-            <el-scrollbar max-height="200px">
+            <el-scrollbar max-height="300px">
               <div v-for="(item, _) in usableOptionArray">
                 <el-card
                   class="option-card"
-                  :ref="currentWord && _ == 0 ? `selectableCardRef` : ''"
+                  :ref="
+                    currentWord && _ == currentRecommandNum
+                      ? `selectableCardRef`
+                      : ''
+                  "
                   @keydown.enter="handleEnterKey"
-                  :class="currentWord && _ == 0 ? 'first' : ''"
+                  :class="
+                    currentWord && _ == currentRecommandNum ? 'first' : ''
+                  "
                   shadow="hover"
                   @click="handleOptionClick(item.option || ``)"
                   style="margin-bottom: 4px; border-radius: 6px"
                 >
-                  <el-row style="display: flex; justify-content: space-between">
-                    <span>
-                      {{ item.option }}
-                    </span>
-                    <span>
+                  <el-row style="display: flex;">
+                    <span style="margin-right: 12px;">
                       <el-tag type="info">
                         <span class="info">
                           {{ item.field }}
                         </span>
                       </el-tag>
+                    </span>
+                    <span>
+                      {{ item.option }}
                     </span>
                   </el-row>
                 </el-card>
@@ -510,21 +527,6 @@ type SupportField = ITextField | IDateTimeField | INumberField;
       </div>
     </el-form>
     <el-col :span="24"> </el-col>
-    <div style="color: rgb(20, 86, 240)">
-      <el-button
-        :disabled="isLoading"
-        @click="handleConfirm"
-        color="rgb(20, 86, 240)"
-      >
-        {{ isLoading ? t("status.transforming") : t("status.confirm") }}
-      </el-button>
-      <el-tag @click="my_resetTextValue = !my_resetTextValue" class="ml-2 clickable" type="info" style="margin-left: 10px">
-        <span class="info" style="display: flex; align-items: center; justify-content: center;"> 
-          <el-icon v-if="my_resetTextValue" style="color: rgb(20, 86, 240); font-size: x-large; margin-right: 4px;"><Select /></el-icon>
-          {{ my_resetTextValue ? `填入后清空输入框` : `不清空输入框` }}
-         </span>
-         </el-tag>
-    </div>
   </div>
 </template>
 
